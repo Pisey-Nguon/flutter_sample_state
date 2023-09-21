@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:sample_state/custom_paging_view.dart';
 import 'package:sample_state/custom_state_view.dart';
 import 'package:sample_state/user.dart';
 import 'package:sample_state/user_repository.dart';
@@ -35,17 +36,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final controller = CustomStateViewController<UserResponse>();
+  final controller = CustomStateViewController<List<Datum>>();
   final UserRepository _userRepository = UserRepository();
 
-  void _handleStateChange(ViewState<UserResponse> state) {
+  void _handleStateChange(ViewState<List<Datum>> state) {
     // Handle the state change
   }
 
   @override
   void initState() {
     controller.addViewStateCallback(_handleStateChange);
-    controller.setOnLoadCallback(() async => await _userRepository.getUser());
 
     super.initState();
   }
@@ -56,7 +56,9 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  void _incrementCounter() {}
+  void _incrementCounter() {
+    controller.switchState(Failed());
+  }
 
   Future<void> _refreshData() async {
     await controller.load();
@@ -69,27 +71,19 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: CustomStateView<UserResponse>(
+      body: CustomPagingView<Datum>(
         controller: controller,
+        onLoadPage: (page) async {
+          return await _userRepository.getUserList(page: page);
+        },
         child: (data) {
-          return RefreshIndicator(
-            onRefresh: _refreshData,
-            color: Colors.amber,
-            child: ListView.builder(
-              itemCount: data.data.length,
-              itemBuilder: (context, index) {
-                final item = data.data[index];
-                return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage:
-                          NetworkImage(item.avatar),
-                    ),
-                    title: Text(item.firstName),
-                    subtitle: Text(item.email),
-                  ),
-                );
-              },
+          return Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundImage: NetworkImage(data.avatar),
+              ),
+              title: Text(data.firstName),
+              subtitle: Text(data.email),
             ),
           );
         },

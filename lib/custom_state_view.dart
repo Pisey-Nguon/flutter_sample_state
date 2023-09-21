@@ -103,10 +103,7 @@ class CustomStateView<T> extends StatefulWidget {
   State<StatefulWidget> createState() => _CustomStateViewState<T>();
 }
 
-class _CustomStateViewState<T> extends State<CustomStateView<T>>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+class _CustomStateViewState<T> extends State<CustomStateView<T>> {
   ViewState<T> _currentState = Loading();
   CustomStateViewController<T> get controller => widget.controller;
   Widget Function(T data) get child => widget.child;
@@ -114,23 +111,7 @@ class _CustomStateViewState<T> extends State<CustomStateView<T>>
   @override
   void initState() {
     super.initState();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-    );
-
-    _fadeAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
-    _animationController.forward();
-
     widget.controller.load();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
   }
 
   @override
@@ -145,13 +126,13 @@ class _CustomStateViewState<T> extends State<CustomStateView<T>>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _fadeAnimation,
-      builder: (context, child) {
-        return Opacity(
-          opacity: _fadeAnimation.value,
-          child: child,
-        );
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return ScaleTransition(
+          filterQuality: FilterQuality.low,
+          scale: animation, child: child,
+          );
       },
       child: _getChildForState(),
     );
@@ -199,15 +180,11 @@ class _CustomStateViewState<T> extends State<CustomStateView<T>>
 
   void _setState(ViewState<T> state) {
     if (state != _currentState) {
-      _currentState = state;
-      _animationController.reverse().then((_) {
-        setState(() {
-          _animationController.forward();
-        });
+      setState(() {
+        _currentState = state;
       });
     }
   }
-  
 
   @override
   void didChangeDependencies() {
